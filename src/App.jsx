@@ -10,6 +10,14 @@ const defaults = {
   title: "THAILAND LOTTERY SECRET MASTER PAPER",
   page_name: "Ariyan Chowdhury",
   profile_image: "",
+  header_profile_image: "",
+  brand_title: "THAILAND LOTTERY",
+  brand_subtitle: "INFORMATION PORTAL",
+  hero_subtitle: "Upcoming draw information · Previous paper · Result updates",
+  publisher_label: "AUTHORIZED MASTER PUBLISHER",
+  publisher_name: "Ariyan Chowdhury",
+  video_caption: "ভিডিওটি এখানে সরাসরি দেখা যাবে।",
+  footer_custom_text: "",
   draw_at: "",
   upcoming_image: "",
   upcoming_date: "",
@@ -120,11 +128,12 @@ function App() {
 
   async function uploadVideo(file) {
     if (!file) return;
-    if (!file.type.startsWith("video/")) throw new Error("শুধু ভিডিও ফাইল আপলোড করুন।");
+    const mime = file.type || (file.name.toLowerCase().endsWith('.mp4') ? 'video/mp4' : file.name.toLowerCase().endsWith('.mov') ? 'video/quicktime' : file.name.toLowerCase().endsWith('.webm') ? 'video/webm' : '');
+    if (!mime.startsWith("video/")) throw new Error("শুধু MP4, WEBM বা MOV ভিডিও ফাইল আপলোড করুন।");
     if (file.size > 100 * 1024 * 1024) throw new Error("ভিডিও সর্বোচ্চ 100 MB হতে পারবে।");
     const safeName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
     const path = `video-proof/${safeName}`;
-    const { error } = await supabase.storage.from("site-images").upload(path, file, { upsert: false, contentType: file.type });
+    const { error } = await supabase.storage.from("site-images").upload(path, file, { upsert: false, contentType: mime });
     if (error) throw error;
     const { data } = supabase.storage.from("site-images").getPublicUrl(path);
     return data.publicUrl;
@@ -158,7 +167,7 @@ function App() {
     if (!file) return;
     setBusy(true); setMessage("");
     try {
-      const folder = field === "profile_image" ? "profile" : "papers";
+      const folder = field.includes("profile") ? "profile" : "papers";
       const url = await uploadImage(file, folder);
       setDraft(v => ({ ...v, [field]: url }));
       setMessage("ছবি আপলোড হয়েছে। পরিবর্তন লাইভ করতে Publish চাপুন।");
@@ -222,9 +231,19 @@ function App() {
       {tab==="admin" ? <div className="content-grid">
         <section className="panel editor-panel">
           <div className="section-heading"><div><p className="eyebrow">CONTENT SETTINGS</p><h2>Website Content</h2></div><span className="soft-icon"><Settings2/></span></div>
-          <label>Headline<input value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})}/></label>
+          <label>Main Headline / Website Title<input value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})}/></label>
           <label>Facebook Page Name<input value={draft.page_name} onChange={e=>setDraft({...draft,page_name:e.target.value})}/></label>
-          <ImageField title="Ariyan Chowdhury Profile Photo" url={draft.profile_image} onFile={f=>handleAsset("profile_image",f)} onRemove={()=>setDraft({...draft,profile_image:""})}/>
+          <div className="editor-subheading"><b>Header & Profile Customization</b><small>ওয়েবসাইটের উপরের ব্র্যান্ড লেখা ও দুইটি আলাদা প্রোফাইল ছবি এখান থেকে বদলাও।</small></div>
+          <label>Header Main Text<input value={draft.brand_title} onChange={e=>setDraft({...draft,brand_title:e.target.value})}/></label>
+          <label>Header Small Text<input value={draft.brand_subtitle} onChange={e=>setDraft({...draft,brand_subtitle:e.target.value})}/></label>
+          <ImageField title="Header-এর পাশে আলাদা Profile Photo" url={draft.header_profile_image} onFile={f=>handleAsset("header_profile_image",f)} onRemove={()=>setDraft({...draft,header_profile_image:""})}/>
+          <ImageField title="Authorized Publisher Profile Photo" url={draft.profile_image} onFile={f=>handleAsset("profile_image",f)} onRemove={()=>setDraft({...draft,profile_image:""})}/>
+          <label>Hero Section-এর নিচের লেখা<input value={draft.hero_subtitle} onChange={e=>setDraft({...draft,hero_subtitle:e.target.value})}/></label>
+          <label>Publisher পরিচয়ের উপরের লেখা<input value={draft.publisher_label} onChange={e=>setDraft({...draft,publisher_label:e.target.value})}/></label>
+          <label>Publisher Name<input value={draft.publisher_name} onChange={e=>setDraft({...draft,publisher_name:e.target.value})}/></label>
+          <div className="editor-subheading"><b>অন্যান্য লেখা পরিবর্তন</b><small>ভিডিও অংশ ও Footer-এর লেখা নিজের মতো করে লিখতে পারবে।</small></div>
+          <label>Video Proof-এর নিচের লেখা<input value={draft.video_caption} onChange={e=>setDraft({...draft,video_caption:e.target.value})}/></label>
+          <label>Footer-এর অতিরিক্ত লেখা<input value={draft.footer_custom_text} onChange={e=>setDraft({...draft,footer_custom_text:e.target.value})}/></label>
           <div className="field-grid">
             <label>Upcoming draw date & time<input type="datetime-local" value={draft.draw_at} onChange={e=>setDraft({...draft,draw_at:e.target.value})}/></label>
             <label>Upcoming paper date<input type="date" value={draft.upcoming_date} onChange={e=>setDraft({...draft,upcoming_date:e.target.value})}/></label>
@@ -291,25 +310,25 @@ function Viewer({config,countdown,reviews,reviewText,setReviewText,reviewName,se
   const chooseLanguage = (value) => { setLanguage(value); try { localStorage.setItem("ariyan-language", value); } catch {} };
   const resultDigits = config.result_text || "---";
   return <div className={`viewer-page lang-${language}`}>
-    <div className="language-bar"><div className="language-brand"><span className="mini-emblem">✦</span><span>THAILAND LOTTERY <small>INFORMATION PORTAL</small></span></div><label className="language-picker"><Globe size={16}/><select aria-label="Choose language" value={language} onChange={e=>chooseLanguage(e.target.value)}><option value="bn">বাংলা</option><option value="en">English</option><option value="th">ไทย</option></select></label></div>
+    <div className="language-bar"><div className="language-brand">{config.header_profile_image ? <img className="header-profile-image" src={config.header_profile_image} alt="Header profile"/> : <span className="mini-emblem">✦</span>}<span>{config.brand_title || "THAILAND LOTTERY"} <small>{config.brand_subtitle || "INFORMATION PORTAL"}</small></span></div><label className="language-picker"><Globe size={16}/><select aria-label="Choose language" value={language} onChange={e=>chooseLanguage(e.target.value)}><option value="bn">বাংলা</option><option value="en">English</option><option value="th">ไทย</option></select></label></div>
     <section className="hero">
-      <div className="hero-glow"/><div className="hero-inner"><p className="eyebrow gold">{t.tag}</p><h1>{config.title}</h1><p className="hero-sub">{t.sub}</p>
-      <div className="publisher-chip"><span className="publisher-avatar">✦</span><span><small>{t.publisher}</small><b>Ariyan Chowdhury</b></span></div>
+      <div className="hero-glow"/><div className="hero-inner"><p className="eyebrow gold">{t.tag}</p><h1>{config.title}</h1><p className="hero-sub">{config.hero_subtitle || t.sub}</p>
+      <div className="publisher-chip">{config.profile_image ? <img className="publisher-avatar" src={config.profile_image} alt={config.publisher_name || "Publisher"}/> : <span className="publisher-avatar">✦</span>}<span><small>{config.publisher_label || t.publisher}</small><b>{config.publisher_name || "Ariyan Chowdhury"}</b></span></div>
       <div className="countdown-card"><div className="countdown-title"><CalendarClock size={18}/> {t.countdown}</div><strong className="countdown-digits">{countdown || "-- : -- : -- : --"}</strong><small className="draw-date-label">{config.draw_at ? `${t.draw}: ${new Date(config.draw_at).toLocaleString(language === "bn" ? "bn-BD" : language === "th" ? "th-TH" : "en-US")}` : t.notSet}</small></div>
       </div>
     </section>
     <main className="viewer-content">
-      <section className="viewer-section"><div className="viewer-section-head"><div><p className="eyebrow">{t.drawInfo}</p><h2>{t.upcoming}</h2></div><span className="section-number">01</span></div>
+      <section className="viewer-section"><div className="viewer-section-head"><div><p className="eyebrow">{t.drawInfo}</p><h2>{t.upcoming}</h2></div></div>
         <p className="muted">{config.upcoming_date ? `${t.date}: ${config.upcoming_date}` : t.upcoming}</p><Paper url={config.upcoming_image} label={t.paperMissing}/></section>
-      <section className="viewer-section"><div className="viewer-section-head"><div><p className="eyebrow">{t.last}</p><h2>{t.previous}</h2></div><span className="section-number">02</span></div>
+      <section className="viewer-section"><div className="viewer-section-head"><div><p className="eyebrow">{t.last}</p><h2>{t.previous}</h2></div></div>
         <p className="muted">{config.previous_date ? `${t.date}: ${config.previous_date}` : t.previous}</p><Paper url={config.previous_image} label={t.paperMissing}/></section>
-      <section className="viewer-section result-card"><div className="viewer-section-head"><div><p className="eyebrow">{t.latest}</p><h2>{t.live}</h2></div><span className="section-number">03</span></div>
+      <section className="viewer-section result-card"><div className="viewer-section-head"><div><p className="eyebrow">{t.latest}</p><h2>{t.live}</h2></div></div>
         <div className="result-number-wrap"><span>{t.result}</span><strong className="result-number">{resultDigits}</strong><small className="three-up-label">3 UP</small><small>{config.result_text ? t.published : t.notPublished}</small></div>
         <a className="primary link-button" href={config.official_url || "#"} target="_blank" rel="noreferrer">{t.check} <ExternalLink size={16}/></a></section>
-      {config.video_proof_url && <section className="viewer-section service-proof-section"><div className="viewer-section-head"><div><p className="eyebrow">CLIENT EXPERIENCE</p><h2>{t.serviceProof}</h2></div><span className="section-number">04</span></div><p className="muted">ভিডিওটি এখানে সরাসরি দেখা যাবে।</p><div className="service-video-frame"><video className="service-proof-video" src={config.video_proof_url} controls autoPlay muted loop playsInline preload="metadata">Your browser does not support video playback.</video></div></section>}
+      {config.video_proof_url && <section className="viewer-section service-proof-section"><div className="viewer-section-head"><div><p className="eyebrow">CLIENT EXPERIENCE</p><h2>{t.serviceProof}</h2></div></div><p className="muted">{config.video_caption || "ভিডিওটি এখানে সরাসরি দেখা যাবে।"}</p><div className="service-video-frame"><video className="service-proof-video" src={config.video_proof_url} controls autoPlay muted loop playsInline preload="metadata">Your browser does not support video playback.</video></div></section>}
       <section className="official-strip"><Globe size={22}/><div><b>{t.official}</b><small>{t.verify}</small></div><a href={config.official_url || "#"} target="_blank" rel="noreferrer"><ArrowUpRight/></a></section>
       {config.imo_url && <a className="imo-button" href={config.imo_url} target="_blank" rel="noreferrer"><MessageCircle/> {t.contact}</a>}
-      {config.show_reviews !== false && <section className="viewer-section reviews-section"><div className="viewer-section-head"><div><p className="eyebrow">{t.feedback}</p><h2>{t.reviews}</h2></div><span className="section-number">04</span></div>
+      {config.show_reviews !== false && <section className="viewer-section reviews-section"><div className="viewer-section-head"><div><p className="eyebrow">{t.feedback}</p><h2>{t.reviews}</h2></div></div>
         <p className="muted">{t.reviewIntro}</p>
         <form className="review-form" onSubmit={submitReview}><label>{t.name}<input value={reviewName} onChange={e=>setReviewName(e.target.value)} placeholder={t.namePlaceholder}/></label>
           <label>{t.yourReview}<textarea rows="4" required value={reviewText} onChange={e=>setReviewText(e.target.value)} placeholder={t.reviewPlaceholder}/></label>
@@ -322,7 +341,7 @@ function Viewer({config,countdown,reviews,reviewText,setReviewText,reviewName,se
       </section>}
       <p className="disclaimer">{config.notice}</p>
     </main>
-    <footer className="viewer-footer"><b>AUTHORIZED MASTER PUBLISHER · ARIYAN CHOWDHURY</b><small>{t.footer}</small></footer>
+    <footer className="viewer-footer"><b>{(config.publisher_label || t.publisher) + " · " + (config.publisher_name || "Ariyan Chowdhury")}</b><small>{config.footer_custom_text || t.footer}</small></footer>
   </div>;
 }
 
