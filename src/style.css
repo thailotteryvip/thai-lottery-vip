@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Noto+Sans+Bengali:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Bengali:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap');
 :root{font-family:'DM Sans','Noto Sans Bengali',sans-serif;color:#182338;background:#f3f5f9;font-synthesis:none}
 *{box-sizing:border-box}body{margin:0}button,input,textarea{font:inherit}button{cursor:pointer}a{color:inherit;text-decoration:none}
 :root{--navy:#101827;--navy2:#1b2940;--gold:#d6b36b;--muted:#758198;--line:#e7eaf0;--paper:#fff}
