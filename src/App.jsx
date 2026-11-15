@@ -28,7 +28,14 @@ const defaults = {
   official_url: "https://www.glo.or.th/",
   imo_url: "",
   notice: "তথ্য যাচাই করে নিন। এটি কোনো সরকারি লটারি সেবা বা জয়ের নিশ্চয়তা নয়।",
-  show_reviews: true
+  show_reviews: true,
+  section_order: ["upcoming", "previous", "result", "video", "official", "imo", "reviews"],
+  viewer_font_size: 16,
+  viewer_bold: false,
+  countdown_font_size: 30,
+  countdown_bold: true,
+  countdown_label_size: 11,
+  countdown_labels: { days: "DAYS", hours: "HOURS", minutes: "MINUTES", seconds: "SECONDS" }
 };
 
 function App() {
@@ -244,6 +251,25 @@ function App() {
           <div className="editor-subheading"><b>অন্যান্য লেখা পরিবর্তন</b><small>ভিডিও অংশ ও Footer-এর লেখা নিজের মতো করে লিখতে পারবে।</small></div>
           <label>Video Proof-এর নিচের লেখা<input value={draft.video_caption} onChange={e=>setDraft({...draft,video_caption:e.target.value})}/></label>
           <label>Footer-এর অতিরিক্ত লেখা<input value={draft.footer_custom_text} onChange={e=>setDraft({...draft,footer_custom_text:e.target.value})}/></label>
+          <div className="editor-subheading"><b>লেখার সাইজ ও Bold কন্ট্রোল</b><small>Viewer Website-এর সাধারণ লেখার সাইজ ও Bold চালু/বন্ধ করো। কাউন্টডাউনের সংখ্যা ও নিচের লেবেলের সাইজ আলাদাভাবে ঠিক করতে পারবে।</small></div>
+          <label>সাধারণ লেখার সাইজ: {draft.viewer_font_size || 16}px<input type="range" min="12" max="24" value={draft.viewer_font_size || 16} onChange={e=>setDraft({...draft,viewer_font_size:Number(e.target.value)})}/></label>
+          <label className="toggle-setting"><input type="checkbox" checked={draft.viewer_bold === true} onChange={e=>setDraft({...draft,viewer_bold:e.target.checked})}/> <span><b>সব সাধারণ লেখা Bold</b><small>চালু করলে Viewer Website-এর লেখাগুলো Bold হবে।</small></span></label>
+          <label>কাউন্টডাউন সংখ্যার সাইজ: {draft.countdown_font_size || 30}px<input type="range" min="18" max="56" value={draft.countdown_font_size || 30} onChange={e=>setDraft({...draft,countdown_font_size:Number(e.target.value)})}/></label>
+          <label className="toggle-setting"><input type="checkbox" checked={draft.countdown_bold !== false} onChange={e=>setDraft({...draft,countdown_bold:e.target.checked})}/> <span><b>কাউন্টডাউন সংখ্যা Bold</b><small>ইচ্ছামতো Bold চালু বা বন্ধ করো।</small></span></label>
+          <label>কাউন্টডাউনের নিচের লেবেলের সাইজ: {draft.countdown_label_size || 11}px<input type="range" min="9" max="20" value={draft.countdown_label_size || 11} onChange={e=>setDraft({...draft,countdown_label_size:Number(e.target.value)})}/></label>
+          <div className="field-grid">
+            <label>Days লেখা<input value={(draft.countdown_labels || defaults.countdown_labels).days} onChange={e=>setDraft({...draft,countdown_labels:{...(draft.countdown_labels || defaults.countdown_labels),days:e.target.value}})}/></label>
+            <label>Hours লেখা<input value={(draft.countdown_labels || defaults.countdown_labels).hours} onChange={e=>setDraft({...draft,countdown_labels:{...(draft.countdown_labels || defaults.countdown_labels),hours:e.target.value}})}/></label>
+            <label>Minutes লেখা<input value={(draft.countdown_labels || defaults.countdown_labels).minutes} onChange={e=>setDraft({...draft,countdown_labels:{...(draft.countdown_labels || defaults.countdown_labels),minutes:e.target.value}})}/></label>
+            <label>Seconds লেখা<input value={(draft.countdown_labels || defaults.countdown_labels).seconds} onChange={e=>setDraft({...draft,countdown_labels:{...(draft.countdown_labels || defaults.countdown_labels),seconds:e.target.value}})}/></label>
+          </div>
+          <div className="editor-subheading"><b>Viewer Website Section Order</b><small>উপরের/নিচের বোতাম চাপ দিয়ে ভিজিটর পেজে কোন অংশের পর কোন অংশ থাকবে সাজাও।</small></div>
+          <div className="section-order-list">
+            {(draft.section_order || defaults.section_order).map((key, index) => {
+              const names = {upcoming:"Upcoming Paper",previous:"Previous Paper",result:"Live Result",video:"Client Service Video Proof",official:"Thailand Lottery Official Website",imo:"IMO Contact",reviews:"Customer Reviews"};
+              return <div className="section-order-row" key={key}><span className="order-index">{index + 1}</span><b>{names[key] || key}</b><div className="order-actions"><button type="button" disabled={index===0} onClick={()=>{const a=[...(draft.section_order||defaults.section_order)];[a[index-1],a[index]]=[a[index],a[index-1]];setDraft({...draft,section_order:a});}}>▲</button><button type="button" disabled={index===((draft.section_order||defaults.section_order).length-1)} onClick={()=>{const a=[...(draft.section_order||defaults.section_order)];[a[index+1],a[index]]=[a[index],a[index+1]];setDraft({...draft,section_order:a});}}>▼</button></div></div>;
+            })}
+          </div>
           <div className="field-grid">
             <label>Upcoming draw date & time<input type="datetime-local" value={draft.draw_at} onChange={e=>setDraft({...draft,draw_at:e.target.value})}/></label>
             <label>Upcoming paper date<input type="date" value={draft.upcoming_date} onChange={e=>setDraft({...draft,upcoming_date:e.target.value})}/></label>
@@ -309,36 +335,29 @@ function Viewer({config,countdown,reviews,reviewText,setReviewText,reviewName,se
   }[language];
   const chooseLanguage = (value) => { setLanguage(value); try { localStorage.setItem("ariyan-language", value); } catch {} };
   const resultDigits = config.result_text || "---";
-  return <div className={`viewer-page lang-${language}`}>
+  return <div className={`viewer-page lang-${language} ${config.viewer_bold ? "viewer-bold" : ""} ${config.countdown_bold === false ? "countdown-normal" : ""}`} style={{"--viewer-font-size":`${config.viewer_font_size || 16}px`,"--countdown-font-size":`${config.countdown_font_size || 30}px`,"--countdown-label-size":`${config.countdown_label_size || 11}px`}}>
     <div className="language-bar"><div className="language-brand">{config.header_profile_image ? <img className="header-profile-image" src={config.header_profile_image} alt="Header profile"/> : <span className="mini-emblem">✦</span>}<span>{config.brand_title || "THAILAND LOTTERY"} <small>{config.brand_subtitle || "INFORMATION PORTAL"}</small></span></div><label className="language-picker"><Globe size={16}/><select aria-label="Choose language" value={language} onChange={e=>chooseLanguage(e.target.value)}><option value="bn">বাংলা</option><option value="en">English</option><option value="th">ไทย</option></select></label></div>
     <section className="hero">
       <div className="hero-glow"/><div className="hero-inner"><p className="eyebrow gold">{t.tag}</p><h1>{config.title}</h1><p className="hero-sub">{config.hero_subtitle || t.sub}</p>
       <div className="publisher-chip">{config.profile_image ? <img className="publisher-avatar" src={config.profile_image} alt={config.publisher_name || "Publisher"}/> : <span className="publisher-avatar">✦</span>}<span><small>{config.publisher_label || t.publisher}</small><b>{config.publisher_name || "Ariyan Chowdhury"}</b></span></div>
-      <div className="countdown-card"><div className="countdown-title"><CalendarClock size={18}/> {t.countdown}</div><strong className="countdown-digits">{countdown || "-- : -- : -- : --"}</strong><small className="draw-date-label">{config.draw_at ? `${t.draw}: ${new Date(config.draw_at).toLocaleString(language === "bn" ? "bn-BD" : language === "th" ? "th-TH" : "en-US")}` : t.notSet}</small></div>
+      <div className="countdown-card"><div className="countdown-title"><CalendarClock size={18}/> {t.countdown}</div><div className="countdown-units">{(countdown || "-- : -- : -- : --").split(":").map((part,index)=><div className="countdown-unit" key={index}><strong className="countdown-digits">{part.trim()}</strong><small>{Object.values(config.countdown_labels || defaults.countdown_labels)[index] || ["DAYS","HOURS","MINUTES","SECONDS"][index]}</small></div>)}</div><small className="draw-date-label">{config.draw_at ? `${t.draw}: ${new Date(config.draw_at).toLocaleString(language === "bn" ? "bn-BD" : language === "th" ? "th-TH" : "en-US")}` : t.notSet}</small></div>
       </div>
     </section>
     <main className="viewer-content">
-      <section className="viewer-section"><div className="viewer-section-head"><div><p className="eyebrow">{t.drawInfo}</p><h2>{t.upcoming}</h2></div></div>
-        <p className="muted">{config.upcoming_date ? `${t.date}: ${config.upcoming_date}` : t.upcoming}</p><Paper url={config.upcoming_image} label={t.paperMissing}/></section>
-      <section className="viewer-section"><div className="viewer-section-head"><div><p className="eyebrow">{t.last}</p><h2>{t.previous}</h2></div></div>
-        <p className="muted">{config.previous_date ? `${t.date}: ${config.previous_date}` : t.previous}</p><Paper url={config.previous_image} label={t.paperMissing}/></section>
-      <section className="viewer-section result-card"><div className="viewer-section-head"><div><p className="eyebrow">{t.latest}</p><h2>{t.live}</h2></div></div>
-        <div className="result-number-wrap"><span>{t.result}</span><strong className="result-number">{resultDigits}</strong><small className="three-up-label">3 UP</small><small>{config.result_text ? t.published : t.notPublished}</small></div>
-        <a className="primary link-button" href={config.official_url || "#"} target="_blank" rel="noreferrer">{t.check} <ExternalLink size={16}/></a></section>
-      {config.video_proof_url && <section className="viewer-section service-proof-section"><div className="viewer-section-head"><div><p className="eyebrow">CLIENT EXPERIENCE</p><h2>{t.serviceProof}</h2></div></div><p className="muted">{config.video_caption || "ভিডিওটি এখানে সরাসরি দেখা যাবে।"}</p><div className="service-video-frame"><video className="service-proof-video" src={config.video_proof_url} controls autoPlay muted loop playsInline preload="metadata">Your browser does not support video playback.</video></div></section>}
-      <section className="official-strip"><Globe size={22}/><div><b>{t.official}</b><small>{t.verify}</small></div><a href={config.official_url || "#"} target="_blank" rel="noreferrer"><ArrowUpRight/></a></section>
-      {config.imo_url && <a className="imo-button" href={config.imo_url} target="_blank" rel="noreferrer"><MessageCircle/> {t.contact}</a>}
-      {config.show_reviews !== false && <section className="viewer-section reviews-section"><div className="viewer-section-head"><div><p className="eyebrow">{t.feedback}</p><h2>{t.reviews}</h2></div></div>
-        <p className="muted">{t.reviewIntro}</p>
-        <form className="review-form" onSubmit={submitReview}><label>{t.name}<input value={reviewName} onChange={e=>setReviewName(e.target.value)} placeholder={t.namePlaceholder}/></label>
-          <label>{t.yourReview}<textarea rows="4" required value={reviewText} onChange={e=>setReviewText(e.target.value)} placeholder={t.reviewPlaceholder}/></label>
-          <label className="upload-review"><ImagePlus size={19}/> {reviewImage ? reviewImage.name : t.addImage}<input type="file" accept="image/*" onChange={e=>setReviewImage(e.target.files?.[0]||null)}/></label>
-          <button className="primary" disabled={busy}>{busy?t.submitting:t.submit}</button>{message && <p className="notice">{message}</p>}
-        </form>
-        <div className="public-reviews">{reviews.length===0 ? <p className="muted">{t.noReviews}</p> : reviews.map(r=><article className="public-review" key={r.id}>
-          <div className="review-meta"><b>{r.customer_name}</b><span className="stars">★★★★★</span></div><p>{r.review_text}</p>{r.image_url && <img src={r.image_url} alt="Customer review attachment"/>}
-        </article>)}</div>
-      </section>}
+      {(() => {
+        const sectionMap = {
+          upcoming: <section className="viewer-section" key="upcoming"><div className="viewer-section-head"><div><p className="eyebrow">{t.drawInfo}</p><h2>{t.upcoming}</h2></div></div><p className="muted">{config.upcoming_date ? `${t.date}: ${config.upcoming_date}` : t.upcoming}</p><Paper url={config.upcoming_image} label={t.paperMissing}/></section>,
+          previous: <section className="viewer-section" key="previous"><div className="viewer-section-head"><div><p className="eyebrow">{t.last}</p><h2>{t.previous}</h2></div></div><p className="muted">{config.previous_date ? `${t.date}: ${config.previous_date}` : t.previous}</p><Paper url={config.previous_image} label={t.paperMissing}/></section>,
+          result: <section className="viewer-section result-card" key="result"><div className="viewer-section-head"><div><p className="eyebrow">{t.latest}</p><h2>{t.live}</h2></div></div><div className="result-number-wrap"><span>{t.result}</span><strong className="result-number">{resultDigits}</strong><small className="three-up-label">3 UP</small><small>{config.result_text ? t.published : t.notPublished}</small></div><a className="primary link-button" href={config.official_url || "#"} target="_blank" rel="noreferrer">{t.check} <ExternalLink size={16}/></a></section>,
+          video: config.video_proof_url ? <section className="viewer-section service-proof-section" key="video"><div className="viewer-section-head"><div><p className="eyebrow">CLIENT EXPERIENCE</p><h2>{t.serviceProof}</h2></div></div><p className="muted">{config.video_caption || "ভিডিওটি এখানে সরাসরি দেখা যাবে।"}</p><div className="service-video-frame"><video className="service-proof-video" src={config.video_proof_url} controls autoPlay muted loop playsInline preload="metadata">Your browser does not support video playback.</video></div></section> : null,
+          official: <section className="official-strip" key="official"><Globe size={22}/><div><b>{t.official}</b><small>{t.verify}</small></div><a href={config.official_url || "#"} target="_blank" rel="noreferrer"><ArrowUpRight/></a></section>,
+          imo: config.imo_url ? <a className="imo-button" key="imo" href={config.imo_url} target="_blank" rel="noreferrer"><MessageCircle/> {t.contact}</a> : null,
+          reviews: config.show_reviews !== false ? <section className="viewer-section reviews-section" key="reviews"><div className="viewer-section-head"><div><p className="eyebrow">{t.feedback}</p><h2>{t.reviews}</h2></div></div><p className="muted">{t.reviewIntro}</p><form className="review-form" onSubmit={submitReview}><label>{t.name}<input value={reviewName} onChange={e=>setReviewName(e.target.value)} placeholder={t.namePlaceholder}/></label><label>{t.yourReview}<textarea rows="4" required value={reviewText} onChange={e=>setReviewText(e.target.value)} placeholder={t.reviewPlaceholder}/></label><label className="upload-review"><ImagePlus size={19}/> {reviewImage ? reviewImage.name : t.addImage}<input type="file" accept="image/*" onChange={e=>setReviewImage(e.target.files?.[0]||null)}/></label><button className="primary" disabled={busy}>{busy?t.submitting:t.submit}</button>{message && <p className="notice">{message}</p>}</form><div className="public-reviews">{reviews.length===0 ? <p className="muted">{t.noReviews}</p> : reviews.map(r=><article className="public-review" key={r.id}><div className="review-meta"><b>{r.customer_name}</b><span className="stars">★★★★★</span></div><p>{r.review_text}</p>{r.image_url && <img src={r.image_url} alt="Customer review attachment"/>}</article>)}</div></section> : null
+        };
+        const order = [...(config.section_order || defaults.section_order)];
+        defaults.section_order.forEach(key => { if (!order.includes(key)) order.push(key); });
+        return order.map(key => sectionMap[key] || null);
+      })()}
       <p className="disclaimer">{config.notice}</p>
     </main>
     <footer className="viewer-footer"><b>{(config.publisher_label || t.publisher) + " · " + (config.publisher_name || "Ariyan Chowdhury")}</b><small>{config.footer_custom_text || t.footer}</small></footer>
