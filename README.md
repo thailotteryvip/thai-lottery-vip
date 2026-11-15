@@ -1,26 +1,61 @@
-# THAI LOTTERY VIP OFFICIAL PORTAL
+# Ariyan Chowdhury — Admin + Viewer mini website
 
-Two separate pages are included:
-- `index.html` — read-only public viewer (no admin panel or PIN flow)
-- `admin.html` — separate PIN-gated content control portal
+This is a deployable starter project. It includes:
+- Password-protected admin login using Supabase Auth
+- Admin editing for headline, page name, profile photo, countdown date/time, papers, result, official link, IMO link and notice
+- Publish-to-viewer workflow
+- Viewer link (`?view=1`)
+- Customer reviews with optional image upload
+- Reviews are private/pending until the admin approves them
+- Admin can approve, hide or delete reviews
+- Supabase Realtime subscription for live updates
 
-## Before launch
+## Important limitations / safety
+- This is an independent information page, not an official Thai Government Lottery Office website.
+- Do not describe uploaded papers as guaranteed winning predictions or imply guaranteed returns.
+- The starter uses public image URLs for uploaded paper/review images. Do not upload sensitive/private images.
+- For production, tighten admin access with an explicit admin-role table and policies. The included starter policy treats authenticated accounts as admins, so do not create public sign-up.
+- The official URL is editable; verify it yourself before publishing.
 
-1. Create a Firebase project at https://console.firebase.google.com/ and register a Web App.
-2. Enable **Cloud Firestore** and **Firebase Storage**.
-3. Copy your Firebase web-app config into the `firebaseConfig` object in **both** HTML files. Replace every `YOUR_...` placeholder.
-4. Deploy both files to the same HTTPS host (Firebase Hosting is a convenient option). The admin's public-link button assumes `index.html` is in the same folder.
-5. Configure Firebase Authentication and production-grade Firestore/Storage security rules before using this publicly.
+## 1. Create Supabase project
+1. Create a free project at https://supabase.com.
+2. Open SQL Editor.
+3. Paste and run all of `supabase/schema.sql`.
+4. In Authentication > Providers, keep Email enabled.
+5. In Authentication > Users, create your admin user manually. Do not enable public sign-up.
 
-## Firestore data shape
+## 2. Configure locally
+1. Install Node.js LTS.
+2. Copy `.env.example` to `.env`.
+3. In Supabase Project Settings > API, copy Project URL and anon/public key into `.env`:
+   - `VITE_SUPABASE_URL=...`
+   - `VITE_SUPABASE_ANON_KEY=...`
+4. Never use the `service_role` key in this frontend.
+5. Run:
+   ```bash
+   npm install
+   npm run dev
+   ```
+6. Open the local URL printed by Vite. Sign in with the admin user created in Supabase.
 
-- `portal/public` — published settings and paper download URLs.
-- `reviews/{reviewId}` — public review records (`name`, `location`, `rating`, `comment`, `photoUrl`, `createdAt`).
+## 3. Deploy free on Vercel
+1. Upload this project to a private GitHub repository.
+2. Import the repository in https://vercel.com.
+3. Add the two environment variables from `.env` in Vercel Project Settings > Environment Variables.
+4. Deploy.
+5. Admin login is available at the deployed root URL or `https://your-project.vercel.app/?admin=1`. The Viewer page includes an Admin Login link in its top bar.
+6. After login, copy the Viewer Link shown in the dashboard. It will look like:
+   `https://your-project.vercel.app/?view=1`
 
-The browser app uses Firebase Storage for paper images and optional profile pictures. Images larger than the app's client-side size limits are rejected.
+## 4. How publishing works
+Edit fields, upload the publisher profile photo or papers, and set the draw date and time in the Admin Panel, then click **Publish Changes**. The countdown starts automatically against that saved date/time and updates every second. The viewer page reads the saved published data from Supabase. Realtime is enabled for refresh/live changes. The public viewer sees only approved reviews.
 
-## Security note — important
+## 5. Review workflow
+A client opens the Viewer Link, submits a review and optional image. It appears in the Admin Panel as Pending. Click the check icon to approve and publish it. Use the eye icon to hide it or the trash icon to permanently delete it.
 
-The requested default PIN `1234` is implemented as a browser-side convenience gate. A PIN stored in local browser storage is **not real server-side authentication**; a technically capable visitor can bypass it or inspect the page. Changing this PIN only affects that browser. Do not put sensitive operations behind this gate alone. Before public launch, use Firebase Authentication for the administrator and enforce access with Firestore and Storage Security Rules. Public review submission needs careful rules/rate limiting/moderation; do not use permissive rules that let any visitor edit `portal/public` or delete reviews. Public visitors should only be able to create review documents with validated fields, while only authenticated admins should be able to publish settings and delete reviews. Consider Firebase App Check and moderation to reduce abuse.
-
-The site presents a lottery information board; it does not verify results. Check the official lottery authority for authoritative information.
+## 6. Before public launch
+- Replace the default IMO link with your own valid contact link.
+- Verify the official lottery website URL and any result information.
+- Set a strong unique admin password.
+- Keep the Supabase project private; never share admin credentials.
+- Review Supabase usage limits and storage policies on the free tier.
