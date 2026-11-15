@@ -5,6 +5,7 @@ import {
   Settings2, ShieldCheck, Star, Trash2, UploadCloud, X
 } from "lucide-react";
 import { isConfigured, supabase } from "./supabase";
+import { AdminPurchases, PurchasePortal } from "./PurchaseSystem";
 
 const defaults = {
   title: "THAILAND LOTTERY SECRET MASTER PAPER",
@@ -30,12 +31,14 @@ const defaults = {
   notice: "তথ্য যাচাই করে নিন। এটি কোনো সরকারি লটারি সেবা বা জয়ের নিশ্চয়তা নয়।",
   show_reviews: true,
   section_order: ["upcoming", "previous", "result", "video", "official", "imo", "reviews"],
+  section_visibility: { upcoming: true, previous: true, result: true, video: true, official: true, imo: true, reviews: true },
   viewer_font_size: 16,
   viewer_bold: false,
   countdown_font_size: 30,
   countdown_bold: true,
   countdown_label_size: 11,
-  countdown_labels: { days: "DAYS", hours: "HOURS", minutes: "MINUTES", seconds: "SECONDS" }
+  countdown_labels: { days: "DAYS", hours: "HOURS", minutes: "MINUTES", seconds: "SECONDS" },
+  paper_price_riyal: 125, purchase_title: "Buy Upcoming Paper", bkash_number: "", payment_instructions: "১. নির্ধারিত bKash নম্বরে Send Money করুন। ২. আপনার নাম ও প্রেরক নম্বরের শেষ ৪ ডিজিট দিয়ে আবেদন জমা দিন। ৩. Admin যাচাই করে Approve করলে Purchase Code তৈরি হবে।", upcoming_private_path: ""
 };
 
 function App() {
@@ -230,12 +233,13 @@ function App() {
       <div className="side-brand"><div className="brand-mark"><ShieldCheck/></div><div><b>ARIYAN</b><small>CONTROL PANEL</small></div></div>
       <button className={tab==="admin"?"nav active":"nav"} onClick={()=>setTab("admin")}><Settings2 size={18}/> Website Editor</button>
       <button className={tab==="reviews"?"nav active":"nav"} onClick={()=>setTab("reviews")}><Star size={18}/> Customer Reviews <span className="count">{pendingReviews.length}</span></button>
+      <button className={tab==="purchases"?"nav active":"nav"} onClick={()=>setTab("purchases")}><ShieldCheck size={18}/> Paper Purchases</button>
       <button className="nav" onClick={()=>window.open(viewerUrl,"_blank")}><Eye size={18}/> View Website</button>
       <div className="side-bottom"><button className="nav" onClick={signOut}><LogOut size={18}/> Sign out</button></div>
     </aside>
     <main className="admin-main">
-      <header className="topbar"><div><p className="eyebrow">WEBSITE MANAGEMENT</p><h1>{tab==="admin"?"Dashboard":"Customer Reviews"}</h1></div><span className="live-pill"><i/> Connected</span></header>
-      {tab==="admin" ? <div className="content-grid">
+      <header className="topbar"><div><p className="eyebrow">WEBSITE MANAGEMENT</p><h1>{tab==="admin"?"Dashboard":tab==="purchases"?"Paper Purchase History":"Customer Reviews"}</h1></div><span className="live-pill"><i/> Connected</span></header>
+      {tab==="purchases" ? <AdminPurchases onMessage={setMessage}/> : tab==="admin" ? <div className="content-grid">
         <section className="panel editor-panel">
           <div className="section-heading"><div><p className="eyebrow">CONTENT SETTINGS</p><h2>Website Content</h2></div><span className="soft-icon"><Settings2/></span></div>
           <label>Main Headline / Website Title<input value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})}/></label>
@@ -263,18 +267,26 @@ function App() {
             <label>Minutes লেখা<input value={(draft.countdown_labels || defaults.countdown_labels).minutes} onChange={e=>setDraft({...draft,countdown_labels:{...(draft.countdown_labels || defaults.countdown_labels),minutes:e.target.value}})}/></label>
             <label>Seconds লেখা<input value={(draft.countdown_labels || defaults.countdown_labels).seconds} onChange={e=>setDraft({...draft,countdown_labels:{...(draft.countdown_labels || defaults.countdown_labels),seconds:e.target.value}})}/></label>
           </div>
-          <div className="editor-subheading"><b>Viewer Website Section Order</b><small>উপরের/নিচের বোতাম চাপ দিয়ে ভিজিটর পেজে কোন অংশের পর কোন অংশ থাকবে সাজাও।</small></div>
+          <div className="editor-subheading"><b>Viewer Website Section Control</b><small>প্রতিটি অংশের Show/Hide চালু বা বন্ধ করো। ▲ ▼ বোতাম দিয়ে কোন অংশের পর কোন অংশ থাকবে সাজাও। বন্ধ করা অংশ ভিজিটর পেজে দেখা যাবে না; আবার চালু করলে ফিরে আসবে।</small></div>
           <div className="section-order-list">
             {(draft.section_order || defaults.section_order).map((key, index) => {
               const names = {upcoming:"Upcoming Paper",previous:"Previous Paper",result:"Live Result",video:"Client Service Video Proof",official:"Thailand Lottery Official Website",imo:"IMO Contact",reviews:"Customer Reviews"};
-              return <div className="section-order-row" key={key}><span className="order-index">{index + 1}</span><b>{names[key] || key}</b><div className="order-actions"><button type="button" disabled={index===0} onClick={()=>{const a=[...(draft.section_order||defaults.section_order)];[a[index-1],a[index]]=[a[index],a[index-1]];setDraft({...draft,section_order:a});}}>▲</button><button type="button" disabled={index===((draft.section_order||defaults.section_order).length-1)} onClick={()=>{const a=[...(draft.section_order||defaults.section_order)];[a[index+1],a[index]]=[a[index],a[index+1]];setDraft({...draft,section_order:a});}}>▼</button></div></div>;
+              const visibility = { ...defaults.section_visibility, ...(draft.section_visibility || {}) };
+              return <div className="section-order-row" key={key}><span className="order-index">{index + 1}</span><b>{names[key] || key}</b><label className="section-visibility-toggle"><input type="checkbox" checked={visibility[key] !== false} onChange={e=>setDraft({...draft,section_visibility:{...visibility,[key]:e.target.checked}})}/><span>{visibility[key] !== false ? "Show" : "Hidden"}</span></label><div className="order-actions"><button type="button" aria-label="Move section up" disabled={index===0} onClick={()=>{const a=[...(draft.section_order||defaults.section_order)];[a[index-1],a[index]]=[a[index],a[index-1]];setDraft({...draft,section_order:a});}}>▲</button><button type="button" aria-label="Move section down" disabled={index===((draft.section_order||defaults.section_order).length-1)} onClick={()=>{const a=[...(draft.section_order||defaults.section_order)];[a[index+1],a[index]]=[a[index],a[index+1]];setDraft({...draft,section_order:a});}}>▼</button></div></div>;
             })}
           </div>
           <div className="field-grid">
             <label>Upcoming draw date & time<input type="datetime-local" value={draft.draw_at} onChange={e=>setDraft({...draft,draw_at:e.target.value})}/></label>
             <label>Upcoming paper date<input type="date" value={draft.upcoming_date} onChange={e=>setDraft({...draft,upcoming_date:e.target.value})}/></label>
           </div>
-          <ImageField title="Upcoming Paper Image" url={draft.upcoming_image} onFile={f=>handleAsset("upcoming_image",f)} onRemove={()=>setDraft({...draft,upcoming_image:""})}/>
+          <div className="editor-subheading"><b>Paid Upcoming Paper Purchase</b><small>পেপারটি Private Bucket-এ আপলোড হবে। ক্রেতা অনুমোদিত Purchase Code দিয়ে পেপার খুলতে পারবে।</small></div>
+          <label>Paper Price (Riyal)<input type="number" min="1" step="0.01" value={draft.paper_price_riyal || 125} onChange={e=>setDraft({...draft,paper_price_riyal:Number(e.target.value)})}/></label>
+          <label>Purchase Section Title<input value={draft.purchase_title || "Buy Upcoming Paper"} onChange={e=>setDraft({...draft,purchase_title:e.target.value})}/></label>
+          <label>bKash Send Money Number<input value={draft.bkash_number || ""} onChange={e=>setDraft({...draft,bkash_number:e.target.value})} placeholder="01XXXXXXXXX"/></label>
+          <label>Payment Instructions<textarea rows="4" value={draft.payment_instructions || ""} onChange={e=>setDraft({...draft,payment_instructions:e.target.value})}/></label>
+          <PrivatePaperField path={draft.upcoming_private_path} onFile={async file=>{if(!file)return;setBusy(true);setMessage("");try{if(!["image/jpeg","image/png","image/webp"].includes(file.type))throw new Error("শুধু JPG, PNG, WEBP বা PDF দিন।");const path=`upcoming/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g,"-")}`;const {error}=await supabase.storage.from("paper-private").upload(path,file,{upsert:false,contentType:file.type});if(error)throw error;setDraft(v=>({...v,upcoming_private_path:path,upcoming_image:""}));setMessage("Private Upcoming Paper আপলোড হয়েছে। Publish Changes চাপুন।");}catch(e){setMessage(e.message||"আপলোড হয়নি");}finally{setBusy(false);}}} onRemove={()=>setDraft({...draft,upcoming_private_path:""})}/>
+          <small className="field-help">Paid Purchase System চালু রাখতে Upcoming Paper এখানে Private হিসেবে আপলোড করো। নিচের পুরোনো Upcoming Paper Image ফিল্ডটি শুধু ফ্রি/পাবলিক পেপারের জন্য।</small>
+          <ImageField title="Upcoming Paper Image (Public / Free Paper only)" url={draft.upcoming_image} onFile={f=>handleAsset("upcoming_image",f)} onRemove={()=>setDraft({...draft,upcoming_image:""})}/>
           <label>Previous draw date<input type="date" value={draft.previous_date} onChange={e=>setDraft({...draft,previous_date:e.target.value})}/></label>
           <ImageField title="Previous Winning Paper" url={draft.previous_image} onFile={f=>handleAsset("previous_image",f)} onRemove={()=>setDraft({...draft,previous_image:""})}/>
           <VideoProofField url={draft.video_proof_url} onFile={handleVideoProof} onRemove={()=>setDraft({...draft,video_proof_url:""})}/>
@@ -308,6 +320,11 @@ function App() {
       </section>}
     </main>
   </div>;
+}
+
+
+function PrivatePaperField({path,onFile,onRemove}) {
+  return <div className="upload-field"><div className="upload-head"><b>Private Upcoming Paper (Paid Access)</b>{path && <button className="text-btn" type="button" onClick={onRemove}><X size={14}/> Remove</button>}</div>{path ? <div className="private-paper-ready"><ShieldCheck size={24}/><span>Private Paper uploaded: <b>{path.split("/").pop()}</b></span></div> : <label className="upload-drop"><UploadCloud size={22}/><span>Private Upcoming Paper আপলোড করুন</span><small>JPG / PNG / WEBP · সর্বোচ্চ 50 MB</small><input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={e=>onFile(e.target.files?.[0])}/></label>}</div>;
 }
 
 function VideoProofField({url,onFile,onRemove}) {
@@ -346,7 +363,7 @@ function Viewer({config,countdown,reviews,reviewText,setReviewText,reviewName,se
     <main className="viewer-content">
       {(() => {
         const sectionMap = {
-          upcoming: <section className="viewer-section" key="upcoming"><div className="viewer-section-head"><div><p className="eyebrow">{t.drawInfo}</p><h2>{t.upcoming}</h2></div></div><p className="muted">{config.upcoming_date ? `${t.date}: ${config.upcoming_date}` : t.upcoming}</p><Paper url={config.upcoming_image} label={t.paperMissing}/></section>,
+          upcoming: <section className="viewer-section" key="upcoming"><div className="viewer-section-head"><div><p className="eyebrow">{t.drawInfo}</p><h2>{t.upcoming}</h2></div></div><p className="muted">{config.upcoming_date ? `${t.date}: ${config.upcoming_date}` : t.upcoming}</p>{config.upcoming_private_path ? <PurchasePortal config={config}/> : <Paper url={config.upcoming_image} label={t.paperMissing}/> }</section>,
           previous: <section className="viewer-section" key="previous"><div className="viewer-section-head"><div><p className="eyebrow">{t.last}</p><h2>{t.previous}</h2></div></div><p className="muted">{config.previous_date ? `${t.date}: ${config.previous_date}` : t.previous}</p><Paper url={config.previous_image} label={t.paperMissing}/></section>,
           result: <section className="viewer-section result-card" key="result"><div className="viewer-section-head"><div><p className="eyebrow">{t.latest}</p><h2>{t.live}</h2></div></div><div className="result-number-wrap"><span>{t.result}</span><strong className="result-number">{resultDigits}</strong><small className="three-up-label">3 UP</small><small>{config.result_text ? t.published : t.notPublished}</small></div><a className="primary link-button" href={config.official_url || "#"} target="_blank" rel="noreferrer">{t.check} <ExternalLink size={16}/></a></section>,
           video: config.video_proof_url ? <section className="viewer-section service-proof-section" key="video"><div className="viewer-section-head"><div><p className="eyebrow">CLIENT EXPERIENCE</p><h2>{t.serviceProof}</h2></div></div><p className="muted">{config.video_caption || "ভিডিওটি এখানে সরাসরি দেখা যাবে।"}</p><div className="service-video-frame"><video className="service-proof-video" src={config.video_proof_url} controls autoPlay muted loop playsInline preload="metadata">Your browser does not support video playback.</video></div></section> : null,
@@ -356,7 +373,8 @@ function Viewer({config,countdown,reviews,reviewText,setReviewText,reviewName,se
         };
         const order = [...(config.section_order || defaults.section_order)];
         defaults.section_order.forEach(key => { if (!order.includes(key)) order.push(key); });
-        return order.map(key => sectionMap[key] || null);
+        const visibility = { ...defaults.section_visibility, ...(config.section_visibility || {}) };
+        return order.filter(key => visibility[key] !== false).map(key => sectionMap[key] || null);
       })()}
       <p className="disclaimer">{config.notice}</p>
     </main>
