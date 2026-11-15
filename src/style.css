@@ -147,3 +147,28 @@ button,input,textarea,select{font-family:inherit}
 .publisher-chip .publisher-avatar:not(img){font-size:20px}
 .viewer-section-head{gap:10px}.section-number{display:none!important}
 @media(max-width:650px){.header-profile-image{width:35px;height:35px;border-radius:11px}.language-brand{max-width:75%;overflow:hidden}.language-brand>span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.publisher-chip{max-width:100%;padding:10px 14px}}
+
+
+/* Admin section ordering controls */
+.section-order-list{display:grid;gap:8px;margin:10px 0 18px}.section-order-row{display:flex;align-items:center;gap:12px;padding:11px 13px;border:1px solid var(--line,rgba(255,255,255,.12));border-radius:12px;background:rgba(255,255,255,.035)}.section-order-row b{flex:1;font-size:13px}.order-index{display:grid;place-items:center;width:25px;height:25px;border-radius:8px;background:rgba(202,166,91,.14);color:#d7b875;font-size:12px;font-weight:800}.order-actions{display:flex;gap:6px}.order-actions button{width:30px;height:30px;border:1px solid rgba(202,166,91,.28);border-radius:8px;background:rgba(202,166,91,.09);color:inherit;cursor:pointer}.order-actions button:disabled{opacity:.28;cursor:not-allowed}
+
+/* Admin typography controls and configurable countdown */
+.viewer-page { font-size: var(--viewer-font-size, 16px); }
+.viewer-page.viewer-bold { font-weight: 700; }
+.viewer-page.viewer-bold p,
+.viewer-page.viewer-bold small,
+.viewer-page.viewer-bold label,
+.viewer-page.viewer-bold .muted,
+.viewer-page.viewer-bold .viewer-section-head,
+.viewer-page.viewer-bold .official-strip,
+.viewer-page.viewer-bold .disclaimer,
+.viewer-page.viewer-bold .viewer-footer { font-weight: 700; }
+.countdown-units { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; width:100%; margin:10px 0 8px; }
+.countdown-unit { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; min-width:0; }
+.countdown-unit .countdown-digits { font-size:var(--countdown-font-size,30px); font-weight:700; line-height:1.1; white-space:nowrap; }
+.viewer-page .countdown-unit small { font-size:var(--countdown-label-size,11px); letter-spacing:.12em; text-transform:uppercase; font-weight:700; opacity:.78; }
+.viewer-page:not(.countdown-bold) .countdown-unit .countdown-digits { font-weight:400; }
+@media(max-width:480px){ .countdown-units{gap:5px}.countdown-unit .countdown-digits{font-size:min(var(--countdown-font-size,30px),7vw)}.viewer-page .countdown-unit small{letter-spacing:.04em} }
+
+.viewer-page.countdown-normal .countdown-unit .countdown-digits { font-weight:400; }
+@media(max-width:650px){.viewer-page .countdown-unit .countdown-digits{font-size:min(var(--countdown-font-size,30px),7vw)!important}}
