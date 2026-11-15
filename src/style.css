@@ -80,3 +80,36 @@ body{background:radial-gradient(ellipse at 8% 0%,#eee6d2 0%,transparent 34%),lin
 .admin-url-block{margin-top:24px;padding-top:18px;border-top:1px solid #eee7d8}
 .admin-url-block>b{font-size:12px;color:#25483c}
 @media(max-width:650px){.paper-frame{padding:7px}.paper-image{max-height:780px}.result-number-wrap{padding:25px 12px}.result-number{letter-spacing:5px}}
+
+/* Premium portal refresh v2: trilingual header, numeric countdown and flexible sections */
+.language-bar{height:76px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 max(22px,calc((100% - 1080px)/2));background:#fffdf7;border-bottom:1px solid #e8dfc9;box-shadow:0 8px 28px #173d2b0a;position:relative;z-index:2}
+.language-brand{display:flex;align-items:center;gap:11px;color:#123d31;font-size:13px;font-weight:900;letter-spacing:1.7px}
+.language-brand small{display:block;color:#9a8351;font-size:8px;letter-spacing:2px;margin-top:4px}
+.mini-emblem{width:37px;height:37px;display:grid;place-items:center;border-radius:12px;background:linear-gradient(135deg,#f4dfa6,#b99148);color:#173d30;font-size:21px;box-shadow:0 7px 18px #b9914828}
+.language-picker{display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid #e7dec9;border-radius:12px;background:#faf8f0;color:#8b713b}
+.language-picker select{border:0!important;outline:0!important;background:transparent!important;color:#244638;font-weight:800;font-size:12px;padding:3px 5px;min-width:95px;cursor:pointer}
+.hero{padding:76px 22px 68px;overflow:hidden}
+.hero-inner{position:relative;z-index:1;max-width:960px;margin:0 auto}
+.hero h1{max-width:850px;line-height:1.13;text-wrap:balance}
+.publisher-chip{margin-top:28px}
+.publisher-chip .publisher-avatar{font-size:19px}
+.countdown-card{max-width:620px;margin:34px auto 0;padding:24px 25px 20px;text-align:center}
+.countdown-title{justify-content:center;color:#f3d995;font-size:11px;letter-spacing:1.7px}
+.countdown-digits{display:block!important;margin:14px 0 3px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:clamp(30px,6vw,48px)!important;font-weight:800;letter-spacing:2px;font-variant-numeric:tabular-nums;color:#fff1c4!important;white-space:nowrap}
+.countdown-units{display:grid;grid-template-columns:repeat(4,1fr);max-width:440px;margin:3px auto 0;color:#c8d9cf;font-size:9px;text-transform:uppercase;letter-spacing:1px}
+.draw-date-label{margin-top:14px}
+.result-number-wrap{position:relative;padding:34px 18px 29px}
+.three-up-label{display:inline-flex!important;align-items:center;justify-content:center;margin:2px auto 12px;padding:6px 13px;border-radius:999px;background:#0b6249;color:#fff!important;font-size:10px!important;letter-spacing:2px!important;box-shadow:0 5px 15px #0b624933}
+.result-number-wrap>small:last-child{display:block}
+.toggle-setting{display:flex!important;align-items:flex-start;gap:12px;padding:15px 16px;border:1px solid #e7dfca;border-radius:13px;background:#faf8f1;cursor:pointer}
+.toggle-setting input{width:18px;height:18px;min-width:18px;margin:2px 0 0;accent-color:#0b6249}
+.toggle-setting span b,.toggle-setting span small{display:block}
+.toggle-setting span b{font-size:12px;color:#25483c}
+.toggle-setting span small{font-size:10px;color:#829087;margin-top:5px;line-height:1.5}
+.reviews-section{transition:opacity .2s}
+.lang-bn .hero h1{font-family:'Noto Serif Bengali',Georgia,serif}
+.lang-th .hero h1{font-family:Georgia,'Noto Sans Thai',sans-serif}
+@media(max-width:650px){.language-bar{height:64px;padding:0 14px}.language-brand{font-size:10px;letter-spacing:1px}.mini-emblem{width:32px;height:32px}.language-picker{padding:6px 8px;gap:4px}.language-picker select{min-width:76px;font-size:11px}.hero{padding:51px 16px 44px}.countdown-card{padding:19px 10px 16px}.countdown-digits{font-size:clamp(25px,7vw,36px)!important;letter-spacing:0}.countdown-units{font-size:8px;letter-spacing:.3px}.publisher-chip{margin-top:20px}}
+
+/* Client service video proof */
+.admin-video-preview{display:block;width:100%;max-height:360px;background:#101827;border-radius:12px;margin:10px 0;object-fit:contain}.field-help{display:block;color:#8a96a9;font-size:10px;line-height:1.6;margin-top:7px}.service-proof-section{overflow:hidden}.service-video-frame{overflow:hidden;border-radius:16px;background:#0d1724;border:1px solid #e5dcc5;margin-top:16px;box-shadow:0 16px 38px #142f2418}.service-proof-video{display:block;width:100%;max-height:620px;aspect-ratio:16/9;object-fit:contain;background:#0b111b}.video-upload-field .upload-drop{min-height:150px}
