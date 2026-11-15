@@ -39,6 +39,7 @@ function App() {
 
   const configured = isConfigured;
   const viewerUrl = typeof window !== "undefined" ? `${window.location.origin}${window.location.pathname}?view=1` : "";
+  const adminUrl = typeof window !== "undefined" ? `${window.location.origin}${window.location.pathname}?admin=1` : "";
 
   useEffect(() => {
     if (!configured) return;
@@ -116,6 +117,7 @@ function App() {
   }
 
   async function publish() {
+    if (draft.result_text && !/^\d{3}$/.test(draft.result_text)) return setMessage("Live Result-এ ঠিক ৩টি সংখ্যা লিখুন।");
     setBusy(true); setMessage("");
     try {
       const payload = { ...draft, published_at: new Date().toISOString() };
@@ -205,7 +207,7 @@ function App() {
           <ImageField title="Upcoming Paper Image" url={draft.upcoming_image} onFile={f=>handleAsset("upcoming_image",f)} onRemove={()=>setDraft({...draft,upcoming_image:""})}/>
           <label>Previous draw date<input type="date" value={draft.previous_date} onChange={e=>setDraft({...draft,previous_date:e.target.value})}/></label>
           <ImageField title="Previous Winning Paper" url={draft.previous_image} onFile={f=>handleAsset("previous_image",f)} onRemove={()=>setDraft({...draft,previous_image:""})}/>
-          <label>Previous game result<textarea rows="4" value={draft.result_text} onChange={e=>setDraft({...draft,result_text:e.target.value})} placeholder="ফলাফল এখানে লিখুন..."/></label>
+          <label>Live Result (৩ সংখ্যার ফলাফল)<input type="text" inputMode="numeric" maxLength={3} pattern="[0-9]{3}" value={draft.result_text} onChange={e=>setDraft({...draft,result_text:e.target.value.replace(/\D/g, "").slice(0,3)})} placeholder="যেমন: 012"/><small className="field-help">ইংরেজি সংখ্যায় ঠিক ৩টি ডিজিট লিখবে। শুরুতে 0 থাকলেও সেটি ঠিক থাকবে।</small></label>
           <label>Official lottery website URL<input type="url" value={draft.official_url} onChange={e=>setDraft({...draft,official_url:e.target.value})}/></label>
           <label>IMO contact link<input type="url" value={draft.imo_url} onChange={e=>setDraft({...draft,imo_url:e.target.value})} placeholder="https://..."/></label>
           <label>Notice / Disclaimer<textarea rows="2" value={draft.notice} onChange={e=>setDraft({...draft,notice:e.target.value})}/></label>
@@ -217,6 +219,7 @@ function App() {
           <p className="muted">এই লিংকটি ক্লায়েন্টদের পাঠাও। অনুমোদিত রিভিউ এখানে দেখা যাবে।</p>
           <div className="url-box"><span>{viewerUrl}</span><button onClick={()=>navigator.clipboard.writeText(viewerUrl)} title="Copy link"><Link2 size={17}/></button></div>
           <button className="secondary full" onClick={()=>window.open(viewerUrl,"_blank")}><ExternalLink size={16}/> Open Viewer Website</button>
+          <div className="admin-url-block"><b>Private Admin Login Link</b><p className="muted small">এই লিংকটি শুধু নিজের কাছে রাখবে; কাউকে শেয়ার করবে না। লগইনের জন্য Supabase account লাগবে।</p><div className="url-box"><span>{adminUrl}</span><button onClick={()=>navigator.clipboard.writeText(adminUrl)} title="Copy admin link"><Link2 size={17}/></button></div></div>
           <div className="stat-card"><span className="stat-icon"><Star/></span><div><b>{reviews.length}</b><small>Total reviews received</small></div></div>
           <div className="stat-card"><span className="stat-icon amber"><Activity/></span><div><b>{pendingReviews.length}</b><small>Waiting for approval</small></div></div>
           <div className="hint"><ShieldCheck size={18}/><p>নতুন রিভিউ প্রথমে শুধু Admin Panel-এ আসবে। তুমি Approve করলে সেটি Viewer-এ প্রকাশিত হবে।</p></div>
@@ -244,7 +247,7 @@ function ImageField({title,url,onFile,onRemove}) {
 
 function Viewer({config,countdown,reviews,reviewText,setReviewText,reviewName,setReviewName,reviewImage,setReviewImage,submitReview,busy,message}) {
   return <div className="viewer-page">
-    <header className="viewer-top"><div className="viewer-brand">{config.profile_image ? <img className="profile-avatar" src={config.profile_image} alt={config.page_name}/> : <span className="brand-mark"><ShieldCheck/></span>}<div><b>{config.page_name}</b><small>COMMUNITY INFORMATION PAGE</small></div></div><a className="viewer-tag admin-entry" href={`${window.location.pathname}?admin=1`}>ADMIN LOGIN ↗</a></header>
+    <header className="viewer-top"><div className="viewer-brand">{config.profile_image ? <img className="profile-avatar" src={config.profile_image} alt={config.page_name}/> : <span className="brand-mark"><ShieldCheck/></span>}<div><b>{config.page_name}</b><small>COMMUNITY INFORMATION PAGE</small></div></div></header>
     <section className="hero">
       <div className="hero-glow"/>
       <p className="eyebrow gold">INFORMATION & RESULTS</p><h1>{config.title}</h1><p className="hero-sub">Upcoming draw information · Previous paper · Result updates</p><div className="publisher-chip">{config.profile_image ? <img src={config.profile_image} alt=""/> : <span className="publisher-avatar"><ShieldCheck size={18}/></span>}<span><small>AUTHORIZED MASTER PUBLISHER</small><b>{config.page_name}</b></span></div>
@@ -257,8 +260,8 @@ function Viewer({config,countdown,reviews,reviewText,setReviewText,reviewName,se
       <section className="viewer-section"><div className="viewer-section-head"><div><p className="eyebrow">LAST DRAW</p><h2>Previous Paper</h2></div><span className="section-number">02</span></div>
         <p className="muted">{config.previous_date ? `তারিখ: ${config.previous_date}` : "Previous draw paper"}</p>
         <Paper url={config.previous_image} label="Previous paper আপলোড করা হয়নি"/></section>
-      <section className="viewer-section result-card"><div className="viewer-section-head"><div><p className="eyebrow">PUBLISHED INFORMATION</p><h2>Previous Game Result</h2></div><span className="section-number">03</span></div>
-        <div className="result-text">{config.result_text || "সর্বশেষ ফলাফল এখনো প্রকাশ করা হয়নি।"}</div>
+      <section className="viewer-section result-card"><div className="viewer-section-head"><div><p className="eyebrow">LATEST UPDATE</p><h2>Live Result</h2></div><span className="section-number">03</span></div>
+        <div className="result-number-wrap"><span>৩ সংখ্যার ফলাফল</span><strong className="result-number">{config.result_text || "---"}</strong><small>{config.result_text ? "সর্বশেষ প্রকাশিত ফলাফল" : "ফলাফল এখনো প্রকাশ করা হয়নি"}</small></div>
         <a className="primary link-button" href={config.official_url || "#"} target="_blank" rel="noreferrer">Check Official Result <ExternalLink size={16}/></a></section>
       <section className="official-strip"><Globe size={22}/><div><b>Thailand Lottery Official Website</b><small>সরকারি উৎস থেকে ফলাফল যাচাই করুন</small></div><a href={config.official_url || "#"} target="_blank" rel="noreferrer"><ArrowUpRight/></a></section>
       {config.imo_url && <a className="imo-button" href={config.imo_url} target="_blank" rel="noreferrer"><MessageCircle/> Contact on IMO</a>}
@@ -279,7 +282,7 @@ function Viewer({config,countdown,reviews,reviewText,setReviewText,reviewName,se
   </div>;
 }
 
-function Paper({url,label}) { return url ? <a href={url} target="_blank" rel="noreferrer"><img className="paper-image" src={url} alt="Lottery paper"/></a> : <div className="paper-empty"><ImagePlus size={28}/><span>{label}</span></div>; }
+function Paper({url,label}) { return url ? <a className="paper-frame" href={url} target="_blank" rel="noreferrer"><img className="paper-image" src={url} alt="A4 lottery paper"/><span className="paper-open-hint">ছবিটি বড় করে দেখতে চাপ দিন ↗</span></a> : <div className="paper-empty"><ImagePlus size={28}/><span>{label}</span></div>; }
 
 function SetupGuide() {
   return <main className="setup-wrap"><section className="setup-card"><div className="brand-mark"><ShieldCheck/></div><p className="eyebrow">PROJECT STARTER</p><h1>Admin Panel প্রস্তুত করার পরের ধাপ</h1>
