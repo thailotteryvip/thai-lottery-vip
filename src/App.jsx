@@ -15,10 +15,12 @@ const defaults = {
   upcoming_date: "",
   previous_image: "",
   previous_date: "",
+  video_proof_url: "",
   result_text: "",
   official_url: "https://www.glo.or.th/",
   imo_url: "",
-  notice: "তথ্য যাচাই করে নিন। এটি কোনো সরকারি লটারি সেবা বা জয়ের নিশ্চয়তা নয়।"
+  notice: "তথ্য যাচাই করে নিন। এটি কোনো সরকারি লটারি সেবা বা জয়ের নিশ্চয়তা নয়।",
+  show_reviews: true
 };
 
 function App() {
@@ -73,15 +75,15 @@ function App() {
 
   useEffect(() => {
     const tick = () => {
-      if (!config.draw_at) return setCountdown("তারিখ সেট করা হয়নি");
+      if (!config.draw_at) return setCountdown("00 : 00 : 00 : 00");
       const diff = new Date(config.draw_at).getTime() - Date.now();
-      if (Number.isNaN(diff)) return setCountdown("সঠিক তারিখ দিন");
-      if (diff <= 0) return setCountdown("ড্র-এর নির্ধারিত সময় পার হয়েছে");
+      if (Number.isNaN(diff)) return setCountdown("00 : 00 : 00 : 00");
+      if (diff <= 0) return setCountdown("00 : 00 : 00 : 00");
       const d = Math.floor(diff / 86400000);
       const h = Math.floor((diff % 86400000) / 3600000);
       const m = Math.floor((diff % 3600000) / 60000);
       const s = Math.floor((diff % 60000) / 1000);
-      setCountdown(`${d} দিন  ${h} ঘণ্টা  ${m} মিনিট  ${s} সেকেন্ড`);
+      setCountdown(`${String(d).padStart(2,"0")} : ${String(h).padStart(2,"0")} : ${String(m).padStart(2,"0")} : ${String(s).padStart(2,"0")}`);
     };
     tick();
     const id = setInterval(tick, 1000);
@@ -114,6 +116,29 @@ function App() {
     if (error) throw error;
     const { data } = supabase.storage.from("site-images").getPublicUrl(path);
     return data.publicUrl;
+  }
+
+  async function uploadVideo(file) {
+    if (!file) return;
+    if (!file.type.startsWith("video/")) throw new Error("শুধু ভিডিও ফাইল আপলোড করুন।");
+    if (file.size > 100 * 1024 * 1024) throw new Error("ভিডিও সর্বোচ্চ 100 MB হতে পারবে।");
+    const safeName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
+    const path = `video-proof/${safeName}`;
+    const { error } = await supabase.storage.from("site-images").upload(path, file, { upsert: false, contentType: file.type });
+    if (error) throw error;
+    const { data } = supabase.storage.from("site-images").getPublicUrl(path);
+    return data.publicUrl;
+  }
+
+  async function handleVideoProof(file) {
+    if (!file) return;
+    setBusy(true); setMessage("");
+    try {
+      const url = await uploadVideo(file);
+      setDraft(v => ({ ...v, video_proof_url: url }));
+      setMessage("ভিডিও আপলোড হয়েছে। ওয়েবসাইটে দেখাতে Publish চাপুন।");
+    } catch (e) { setMessage(e.message || "ভিডিও আপলোড হয়নি।"); }
+    finally { setBusy(false); }
   }
 
   async function publish() {
@@ -207,10 +232,12 @@ function App() {
           <ImageField title="Upcoming Paper Image" url={draft.upcoming_image} onFile={f=>handleAsset("upcoming_image",f)} onRemove={()=>setDraft({...draft,upcoming_image:""})}/>
           <label>Previous draw date<input type="date" value={draft.previous_date} onChange={e=>setDraft({...draft,previous_date:e.target.value})}/></label>
           <ImageField title="Previous Winning Paper" url={draft.previous_image} onFile={f=>handleAsset("previous_image",f)} onRemove={()=>setDraft({...draft,previous_image:""})}/>
+          <VideoProofField url={draft.video_proof_url} onFile={handleVideoProof} onRemove={()=>setDraft({...draft,video_proof_url:""})}/>
           <label>Live Result (৩ সংখ্যার ফলাফল)<input type="text" inputMode="numeric" maxLength={3} pattern="[0-9]{3}" value={draft.result_text} onChange={e=>setDraft({...draft,result_text:e.target.value.replace(/\D/g, "").slice(0,3)})} placeholder="যেমন: 012"/><small className="field-help">ইংরেজি সংখ্যায় ঠিক ৩টি ডিজিট লিখবে। শুরুতে 0 থাকলেও সেটি ঠিক থাকবে।</small></label>
           <label>Official lottery website URL<input type="url" value={draft.official_url} onChange={e=>setDraft({...draft,official_url:e.target.value})}/></label>
           <label>IMO contact link<input type="url" value={draft.imo_url} onChange={e=>setDraft({...draft,imo_url:e.target.value})} placeholder="https://..."/></label>
           <label>Notice / Disclaimer<textarea rows="2" value={draft.notice} onChange={e=>setDraft({...draft,notice:e.target.value})}/></label>
+          <label className="toggle-setting"><input type="checkbox" checked={draft.show_reviews !== false} onChange={e=>setDraft({...draft,show_reviews:e.target.checked})}/> <span><b>Show Customer Reviews section</b><small>বন্ধ করলে Viewer Website থেকে পুরো Review অংশ লুকানো থাকবে।</small></span></label>
           <div className="publish-row"><button className="primary" onClick={publish} disabled={busy}><Save size={17}/>{busy?"Publishing...":"Publish Changes"}</button><span className="muted small">Publish করলেই Viewer Website-এ আপডেট যাবে</span></div>
           {message && <p className="notice">{message}</p>}
         </section>
@@ -238,6 +265,13 @@ function App() {
   </div>;
 }
 
+function VideoProofField({url,onFile,onRemove}) {
+  return <div className="upload-field video-upload-field"><div className="upload-head"><b>Client Service Video Proof</b>{url && <button className="text-btn" onClick={onRemove}><X size={14}/> Remove</button>}</div>
+    {url ? <><video className="admin-video-preview" src={url} controls playsInline/><label className="replace-link">ভিডিও পরিবর্তন করুন<input type="file" accept="video/mp4,video/webm,video/quicktime,video/*" onChange={e=>onFile(e.target.files?.[0])}/></label></> : <label className="upload-drop"><UploadCloud size={22}/><span>ক্লায়েন্ট সার্ভিসের ভিডিও প্রুফ আপলোড করুন</span><small>MP4 / WEBM / MOV · সর্বোচ্চ 100 MB</small><input type="file" accept="video/mp4,video/webm,video/quicktime,video/*" onChange={e=>onFile(e.target.files?.[0])}/></label>}
+    <small className="field-help">ভিডিও আপলোডের পর Publish Changes চাপলে Viewer Website-এ দেখা যাবে।</small>
+  </div>;
+}
+
 function ImageField({title,url,onFile,onRemove}) {
   return <div className="upload-field"><div className="upload-head"><b>{title}</b>{url && <button className="text-btn" onClick={onRemove}><X size={14}/> Remove</button>}</div>
     {url ? <img className="paper-preview" src={url} alt={title}/> : <label className="upload-drop"><UploadCloud size={22}/><span>ছবি আপলোড করতে ক্লিক করুন</span><small>PNG, JPG বা WEBP</small><input type="file" accept="image/*" onChange={e=>onFile(e.target.files?.[0])}/></label>}
@@ -246,39 +280,49 @@ function ImageField({title,url,onFile,onRemove}) {
 }
 
 function Viewer({config,countdown,reviews,reviewText,setReviewText,reviewName,setReviewName,reviewImage,setReviewImage,submitReview,busy,message}) {
-  return <div className="viewer-page">
-    <header className="viewer-top"><div className="viewer-brand">{config.profile_image ? <img className="profile-avatar" src={config.profile_image} alt={config.page_name}/> : <span className="brand-mark"><ShieldCheck/></span>}<div><b>{config.page_name}</b><small>COMMUNITY INFORMATION PAGE</small></div></div></header>
+  const [language, setLanguage] = useState(() => {
+    try { return localStorage.getItem("ariyan-language") || "en"; } catch { return "en"; }
+  });
+  const t = {
+    en: {tag:"INDEPENDENT LOTTERY INFORMATION",sub:"Upcoming draw information · Previous paper · Result updates",countdown:"NEXT DRAW COUNTDOWN",draw:"Draw time",notSet:"Draw date & time not published yet",upcoming:"Upcoming Paper",previous:"Previous Paper",date:"Date",paperMissing:"Paper image has not been uploaded",latest:"LATEST UPDATE",live:"Live Result",result:"3 DIGIT RESULT",published:"Latest published result",notPublished:"Result has not been published yet",check:"Check Official Result",official:"Thailand Lottery Official Website",verify:"Please verify results with the official source",reviews:"Customer Reviews",feedback:"COMMUNITY FEEDBACK",reviewIntro:"Share your experience. Reviews are published after moderation.",name:"Your name (optional)",yourReview:"Your review",namePlaceholder:"Your name",reviewPlaceholder:"Write your experience...",addImage:"Add an image (optional)",submit:"Submit Review",submitting:"Submitting...",noReviews:"No approved reviews yet.",serviceProof:"CLIENT SERVICE VIDEO PROOF",drawInfo:"NEXT DRAW",last:"LAST DRAW",publisher:"AUTHORIZED MASTER PUBLISHER",contact:"Contact on IMO",footer:"Independent information page · Not affiliated with the Thai Government Lottery Office",days:"DAYS · HOURS · MINUTES · SECONDS"},
+    bn: {tag:"স্বাধীন লটারি তথ্যসেবা",sub:"আসন্ন ড্র · পূর্ববর্তী পেপার · ফলাফল আপডেট",countdown:"পরবর্তী ড্র-এর কাউন্টডাউন",draw:"ড্র-এর সময়",notSet:"ড্র-এর তারিখ ও সময় এখনো দেওয়া হয়নি",upcoming:"আসন্ন পেপার",previous:"পূর্ববর্তী পেপার",date:"তারিখ",paperMissing:"পেপারের ছবি আপলোড করা হয়নি",latest:"সর্বশেষ আপডেট",live:"লাইভ রেজাল্ট",result:"৩ সংখ্যার ফলাফল",published:"সর্বশেষ প্রকাশিত ফলাফল",notPublished:"ফলাফল এখনো প্রকাশ করা হয়নি",check:"অফিশিয়াল ফলাফল দেখুন",official:"থাইল্যান্ড লটারি অফিসিয়াল ওয়েবসাইট",verify:"অফিশিয়াল উৎস থেকে ফলাফল যাচাই করুন",reviews:"কাস্টমার রিভিউ",feedback:"গ্রাহকদের মতামত",reviewIntro:"আপনার অভিজ্ঞতা জানান। যাচাইয়ের পর রিভিউ প্রকাশিত হবে।",name:"আপনার নাম (ঐচ্ছিক)",yourReview:"আপনার রিভিউ",namePlaceholder:"আপনার নাম",reviewPlaceholder:"আপনার অভিজ্ঞতা লিখুন...",addImage:"ছবি যুক্ত করুন (ঐচ্ছিক)",submit:"রিভিউ জমা দিন",submitting:"জমা হচ্ছে...",noReviews:"এখনো কোনো অনুমোদিত রিভিউ নেই।",serviceProof:"ক্লায়েন্ট সার্ভিসের ভিডিও প্রুফ",drawInfo:"পরবর্তী ড্র",last:"সর্বশেষ ড্র",publisher:"অনুমোদিত মাস্টার পাবলিশার",contact:"IMO-তে যোগাযোগ",footer:"স্বাধীন তথ্য পেজ · থাই সরকারি লটারি অফিসের সঙ্গে অনুমোদিত বা সম্পৃক্ত নয়",days:"দিন · ঘণ্টা · মিনিট · সেকেন্ড"},
+    th: {tag:"ศูนย์ข้อมูลลอตเตอรี่แบบอิสระ",sub:"งวดถัดไป · เอกสารงวดก่อน · อัปเดตผลรางวัล",countdown:"นับถอยหลังงวดถัดไป",draw:"เวลาออกรางวัล",notSet:"ยังไม่ได้ประกาศวันและเวลาออกรางวัล",upcoming:"เอกสารงวดถัดไป",previous:"เอกสารงวดก่อน",date:"วันที่",paperMissing:"ยังไม่ได้อัปโหลดภาพเอกสาร",latest:"อัปเดตล่าสุด",live:"ผลรางวัลล่าสุด",result:"ผลลัพธ์ 3 หลัก",published:"ผลรางวัลที่ประกาศล่าสุด",notPublished:"ยังไม่มีการประกาศผลรางวัล",check:"ตรวจสอบผลอย่างเป็นทางการ",official:"เว็บไซต์สำนักงานสลากกินแบ่งรัฐบาลไทย",verify:"โปรดตรวจสอบผลจากแหล่งข้อมูลทางการ",reviews:"รีวิวจากลูกค้า",feedback:"ความคิดเห็นจากชุมชน",reviewIntro:"แบ่งปันประสบการณ์ของคุณ รีวิวจะแสดงหลังการตรวจสอบ",name:"ชื่อของคุณ (ไม่บังคับ)",yourReview:"รีวิวของคุณ",namePlaceholder:"ชื่อของคุณ",reviewPlaceholder:"เขียนประสบการณ์ของคุณ...",addImage:"เพิ่มรูปภาพ (ไม่บังคับ)",submit:"ส่งรีวิว",submitting:"กำลังส่ง...",noReviews:"ยังไม่มีรีวิวที่ได้รับอนุมัติ",serviceProof:"วิดีโอหลักฐานการให้บริการลูกค้า",drawInfo:"งวดถัดไป",last:"งวดล่าสุด",publisher:"ผู้เผยแพร่หลักที่ได้รับอนุญาต",contact:"ติดต่อผ่าน IMO",footer:"เว็บไซต์ข้อมูลอิสระ · ไม่มีส่วนเกี่ยวข้องกับสำนักงานสลากกินแบ่งรัฐบาลไทย",days:"วัน · ชั่วโมง · นาที · วินาที"}
+  }[language];
+  const chooseLanguage = (value) => { setLanguage(value); try { localStorage.setItem("ariyan-language", value); } catch {} };
+  const resultDigits = config.result_text || "---";
+  return <div className={`viewer-page lang-${language}`}>
+    <div className="language-bar"><div className="language-brand"><span className="mini-emblem">✦</span><span>THAILAND LOTTERY <small>INFORMATION PORTAL</small></span></div><label className="language-picker"><Globe size={16}/><select aria-label="Choose language" value={language} onChange={e=>chooseLanguage(e.target.value)}><option value="bn">বাংলা</option><option value="en">English</option><option value="th">ไทย</option></select></label></div>
     <section className="hero">
-      <div className="hero-glow"/>
-      <p className="eyebrow gold">INFORMATION & RESULTS</p><h1>{config.title}</h1><p className="hero-sub">Upcoming draw information · Previous paper · Result updates</p><div className="publisher-chip">{config.profile_image ? <img src={config.profile_image} alt=""/> : <span className="publisher-avatar"><ShieldCheck size={18}/></span>}<span><small>AUTHORIZED MASTER PUBLISHER</small><b>{config.page_name}</b></span></div>
-      <div className="countdown-card"><div className="countdown-title"><CalendarClock size={18}/> UPCOMING DRAW COUNTDOWN</div><strong>{countdown || "Loading..."}</strong><small className="draw-date-label">{config.draw_at ? `Draw time: ${new Date(config.draw_at).toLocaleString()}` : "Draw date & time not published yet"}</small></div>
+      <div className="hero-glow"/><div className="hero-inner"><p className="eyebrow gold">{t.tag}</p><h1>{config.title}</h1><p className="hero-sub">{t.sub}</p>
+      <div className="publisher-chip"><span className="publisher-avatar">✦</span><span><small>{t.publisher}</small><b>Ariyan Chowdhury</b></span></div>
+      <div className="countdown-card"><div className="countdown-title"><CalendarClock size={18}/> {t.countdown}</div><strong className="countdown-digits">{countdown || "-- : -- : -- : --"}</strong><small className="draw-date-label">{config.draw_at ? `${t.draw}: ${new Date(config.draw_at).toLocaleString(language === "bn" ? "bn-BD" : language === "th" ? "th-TH" : "en-US")}` : t.notSet}</small></div>
+      </div>
     </section>
     <main className="viewer-content">
-      <section className="viewer-section"><div className="viewer-section-head"><div><p className="eyebrow">NEXT DRAW</p><h2>Upcoming Paper</h2></div><span className="section-number">01</span></div>
-        <p className="muted">{config.upcoming_date ? `তারিখ: ${config.upcoming_date}` : "Upcoming draw paper"}</p>
-        <Paper url={config.upcoming_image} label="Upcoming paper আপলোড করা হয়নি"/></section>
-      <section className="viewer-section"><div className="viewer-section-head"><div><p className="eyebrow">LAST DRAW</p><h2>Previous Paper</h2></div><span className="section-number">02</span></div>
-        <p className="muted">{config.previous_date ? `তারিখ: ${config.previous_date}` : "Previous draw paper"}</p>
-        <Paper url={config.previous_image} label="Previous paper আপলোড করা হয়নি"/></section>
-      <section className="viewer-section result-card"><div className="viewer-section-head"><div><p className="eyebrow">LATEST UPDATE</p><h2>Live Result</h2></div><span className="section-number">03</span></div>
-        <div className="result-number-wrap"><span>৩ সংখ্যার ফলাফল</span><strong className="result-number">{config.result_text || "---"}</strong><small>{config.result_text ? "সর্বশেষ প্রকাশিত ফলাফল" : "ফলাফল এখনো প্রকাশ করা হয়নি"}</small></div>
-        <a className="primary link-button" href={config.official_url || "#"} target="_blank" rel="noreferrer">Check Official Result <ExternalLink size={16}/></a></section>
-      <section className="official-strip"><Globe size={22}/><div><b>Thailand Lottery Official Website</b><small>সরকারি উৎস থেকে ফলাফল যাচাই করুন</small></div><a href={config.official_url || "#"} target="_blank" rel="noreferrer"><ArrowUpRight/></a></section>
-      {config.imo_url && <a className="imo-button" href={config.imo_url} target="_blank" rel="noreferrer"><MessageCircle/> Contact on IMO</a>}
-      <section className="viewer-section"><div className="viewer-section-head"><div><p className="eyebrow">COMMUNITY FEEDBACK</p><h2>Customer Reviews</h2></div><span className="section-number">04</span></div>
-        <p className="muted">আপনার অভিজ্ঞতা শেয়ার করুন। রিভিউ যাচাই ও অনুমোদনের পর প্রকাশিত হবে।</p>
-        <form className="review-form" onSubmit={submitReview}><label>Your name (optional)<input value={reviewName} onChange={e=>setReviewName(e.target.value)} placeholder="আপনার নাম"/></label>
-          <label>Your review<textarea rows="4" required value={reviewText} onChange={e=>setReviewText(e.target.value)} placeholder="আপনার অভিজ্ঞতা লিখুন..."/></label>
-          <label className="upload-review"><ImagePlus size={19}/> {reviewImage ? reviewImage.name : "ছবি যুক্ত করুন (ঐচ্ছিক)"}<input type="file" accept="image/*" onChange={e=>setReviewImage(e.target.files?.[0]||null)}/></label>
-          <button className="primary" disabled={busy}>{busy?"Submitting...":"Submit Review"}</button>{message && <p className="notice">{message}</p>}
+      <section className="viewer-section"><div className="viewer-section-head"><div><p className="eyebrow">{t.drawInfo}</p><h2>{t.upcoming}</h2></div><span className="section-number">01</span></div>
+        <p className="muted">{config.upcoming_date ? `${t.date}: ${config.upcoming_date}` : t.upcoming}</p><Paper url={config.upcoming_image} label={t.paperMissing}/></section>
+      <section className="viewer-section"><div className="viewer-section-head"><div><p className="eyebrow">{t.last}</p><h2>{t.previous}</h2></div><span className="section-number">02</span></div>
+        <p className="muted">{config.previous_date ? `${t.date}: ${config.previous_date}` : t.previous}</p><Paper url={config.previous_image} label={t.paperMissing}/></section>
+      <section className="viewer-section result-card"><div className="viewer-section-head"><div><p className="eyebrow">{t.latest}</p><h2>{t.live}</h2></div><span className="section-number">03</span></div>
+        <div className="result-number-wrap"><span>{t.result}</span><strong className="result-number">{resultDigits}</strong><small className="three-up-label">3 UP</small><small>{config.result_text ? t.published : t.notPublished}</small></div>
+        <a className="primary link-button" href={config.official_url || "#"} target="_blank" rel="noreferrer">{t.check} <ExternalLink size={16}/></a></section>
+      {config.video_proof_url && <section className="viewer-section service-proof-section"><div className="viewer-section-head"><div><p className="eyebrow">CLIENT EXPERIENCE</p><h2>{t.serviceProof}</h2></div><span className="section-number">04</span></div><p className="muted">ভিডিওটি এখানে সরাসরি দেখা যাবে।</p><div className="service-video-frame"><video className="service-proof-video" src={config.video_proof_url} controls autoPlay muted loop playsInline preload="metadata">Your browser does not support video playback.</video></div></section>}
+      <section className="official-strip"><Globe size={22}/><div><b>{t.official}</b><small>{t.verify}</small></div><a href={config.official_url || "#"} target="_blank" rel="noreferrer"><ArrowUpRight/></a></section>
+      {config.imo_url && <a className="imo-button" href={config.imo_url} target="_blank" rel="noreferrer"><MessageCircle/> {t.contact}</a>}
+      {config.show_reviews !== false && <section className="viewer-section reviews-section"><div className="viewer-section-head"><div><p className="eyebrow">{t.feedback}</p><h2>{t.reviews}</h2></div><span className="section-number">04</span></div>
+        <p className="muted">{t.reviewIntro}</p>
+        <form className="review-form" onSubmit={submitReview}><label>{t.name}<input value={reviewName} onChange={e=>setReviewName(e.target.value)} placeholder={t.namePlaceholder}/></label>
+          <label>{t.yourReview}<textarea rows="4" required value={reviewText} onChange={e=>setReviewText(e.target.value)} placeholder={t.reviewPlaceholder}/></label>
+          <label className="upload-review"><ImagePlus size={19}/> {reviewImage ? reviewImage.name : t.addImage}<input type="file" accept="image/*" onChange={e=>setReviewImage(e.target.files?.[0]||null)}/></label>
+          <button className="primary" disabled={busy}>{busy?t.submitting:t.submit}</button>{message && <p className="notice">{message}</p>}
         </form>
-        <div className="public-reviews">{reviews.length===0 ? <p className="muted">এখনো কোনো অনুমোদিত রিভিউ নেই।</p> : reviews.map(r=><article className="public-review" key={r.id}>
+        <div className="public-reviews">{reviews.length===0 ? <p className="muted">{t.noReviews}</p> : reviews.map(r=><article className="public-review" key={r.id}>
           <div className="review-meta"><b>{r.customer_name}</b><span className="stars">★★★★★</span></div><p>{r.review_text}</p>{r.image_url && <img src={r.image_url} alt="Customer review attachment"/>}
         </article>)}</div>
-      </section>
+      </section>}
       <p className="disclaimer">{config.notice}</p>
     </main>
-    <footer className="viewer-footer"><b>{config.page_name}</b><small>Independent information page · Not affiliated with the Thai Government Lottery Office</small></footer>
+    <footer className="viewer-footer"><b>AUTHORIZED MASTER PUBLISHER · ARIYAN CHOWDHURY</b><small>{t.footer}</small></footer>
   </div>;
 }
 
