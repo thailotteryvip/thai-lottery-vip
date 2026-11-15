@@ -38,7 +38,7 @@ const defaults = {
   countdown_bold: true,
   countdown_label_size: 11,
   countdown_labels: { days: "DAYS", hours: "HOURS", minutes: "MINUTES", seconds: "SECONDS" },
-  paper_price_riyal: 125, purchase_title: "Buy Upcoming Paper", bkash_number: "", payment_instructions: "১. নির্ধারিত bKash নম্বরে Send Money করুন। ২. আপনার নাম ও প্রেরক নম্বরের শেষ ৪ ডিজিট দিয়ে আবেদন জমা দিন। ৩. Admin যাচাই করে Approve করলে Purchase Code তৈরি হবে।", upcoming_private_path: ""
+  paper_price_riyal: 125, purchase_title: "Buy Upcoming Paper", bkash_number: "", payment_instructions: "১. নির্ধারিত bKash নম্বরে Send Money করুন। ২. আপনার নাম ও প্রেরক নম্বরের শেষ ৪ ডিজিট দিয়ে আবেদন জমা দিন। ৩. Admin যাচাই করে Approve করলে পেপার স্বয়ংক্রিয়ভাবে দেখা যাবে।", upcoming_private_path: ""
 };
 
 function App() {
@@ -279,7 +279,7 @@ function App() {
             <label>Upcoming draw date & time<input type="datetime-local" value={draft.draw_at} onChange={e=>setDraft({...draft,draw_at:e.target.value})}/></label>
             <label>Upcoming paper date<input type="date" value={draft.upcoming_date} onChange={e=>setDraft({...draft,upcoming_date:e.target.value})}/></label>
           </div>
-          <div className="editor-subheading"><b>Paid Upcoming Paper Purchase</b><small>পেপারটি Private Bucket-এ আপলোড হবে। ক্রেতা অনুমোদিত Purchase Code দিয়ে পেপার খুলতে পারবে।</small></div>
+          <div className="editor-subheading"><b>Paid Upcoming Paper Purchase</b><small>পেপারটি Private Bucket-এ আপলোড হবে। ক্রেতা Admin পেমেন্ট Approve করলেই ক্রেতার পেপার স্বয়ংক্রিয়ভাবে দেখা যাবে।</small></div>
           <label>Paper Price (Riyal)<input type="number" min="1" step="0.01" value={draft.paper_price_riyal || 125} onChange={e=>setDraft({...draft,paper_price_riyal:Number(e.target.value)})}/></label>
           <label>Purchase Section Title<input value={draft.purchase_title || "Buy Upcoming Paper"} onChange={e=>setDraft({...draft,purchase_title:e.target.value})}/></label>
           <label>bKash Send Money Number<input value={draft.bkash_number || ""} onChange={e=>setDraft({...draft,bkash_number:e.target.value})} placeholder="01XXXXXXXXX"/></label>
