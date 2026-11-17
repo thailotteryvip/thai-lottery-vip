@@ -38,7 +38,7 @@ const defaults = {
   countdown_bold: true,
   countdown_label_size: 11,
   countdown_labels: { days: "DAYS", hours: "HOURS", minutes: "MINUTES", seconds: "SECONDS" },
-  paper_price_riyal: 125, purchase_title: "Buy Upcoming Paper", bkash_number: "", payment_instructions: "১. নির্ধারিত bKash নম্বরে Send Money করুন। ২. আপনার নাম ও প্রেরক নম্বরের শেষ ৪ ডিজিট দিয়ে আবেদন জমা দিন। ৩. Admin যাচাই করে Approve করলে পেপার স্বয়ংক্রিয়ভাবে দেখা যাবে।", upcoming_private_path: ""
+  paper_price_riyal: 125, purchase_title: "Buy Upcoming Paper", bkash_number: "", nagad_number: "", payment_instructions: "১. নির্ধারিত bKash নম্বরে Send Money করুন। ২. আপনার নাম ও প্রেরক নম্বরের শেষ ৪ ডিজিট দিয়ে আবেদন জমা দিন। ৩. Admin যাচাই করে Approve করলে পেপার স্বয়ংক্রিয়ভাবে দেখা যাবে।", upcoming_private_path: ""
 };
 
 function App() {
@@ -282,7 +282,7 @@ function App() {
           <div className="editor-subheading"><b>Paid Upcoming Paper Purchase</b><small>পেপারটি Private Bucket-এ আপলোড হবে। ক্রেতা Admin পেমেন্ট Approve করলেই ক্রেতার পেপার স্বয়ংক্রিয়ভাবে দেখা যাবে।</small></div>
           <label>Paper Price (Riyal)<input type="number" min="1" step="0.01" value={draft.paper_price_riyal || 125} onChange={e=>setDraft({...draft,paper_price_riyal:Number(e.target.value)})}/></label>
           <label>Purchase Section Title<input value={draft.purchase_title || "Buy Upcoming Paper"} onChange={e=>setDraft({...draft,purchase_title:e.target.value})}/></label>
-          <label>bKash Send Money Number<input value={draft.bkash_number || ""} onChange={e=>setDraft({...draft,bkash_number:e.target.value})} placeholder="01XXXXXXXXX"/></label>
+          <div className="field-grid"><label>bKash Send Money Number<input value={draft.bkash_number || ""} onChange={e=>setDraft({...draft,bkash_number:e.target.value})} placeholder="01XXXXXXXXX"/></label><label>Nagad Send Money Number<input value={draft.nagad_number || ""} onChange={e=>setDraft({...draft,nagad_number:e.target.value})} placeholder="01XXXXXXXXX"/></label></div>
           <label>Payment Instructions<textarea rows="4" value={draft.payment_instructions || ""} onChange={e=>setDraft({...draft,payment_instructions:e.target.value})}/></label>
           <PrivatePaperField path={draft.upcoming_private_path} onFile={async file=>{if(!file)return;setBusy(true);setMessage("");try{if(!["image/jpeg","image/png","image/webp"].includes(file.type))throw new Error("শুধু JPG, PNG, WEBP বা PDF দিন।");const path=`upcoming/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g,"-")}`;const {error}=await supabase.storage.from("paper-private").upload(path,file,{upsert:false,contentType:file.type});if(error)throw error;setDraft(v=>({...v,upcoming_private_path:path,upcoming_image:""}));setMessage("Private Upcoming Paper আপলোড হয়েছে। Publish Changes চাপুন।");}catch(e){setMessage(e.message||"আপলোড হয়নি");}finally{setBusy(false);}}} onRemove={()=>setDraft({...draft,upcoming_private_path:""})}/>
           <small className="field-help">Paid Purchase System চালু রাখতে Upcoming Paper এখানে Private হিসেবে আপলোড করো। নিচের পুরোনো Upcoming Paper Image ফিল্ডটি শুধু ফ্রি/পাবলিক পেপারের জন্য।</small>
