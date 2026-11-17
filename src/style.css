@@ -116,7 +116,7 @@ body{background:radial-gradient(ellipse at 8% 0%,#eee6d2 0%,transparent 34%),lin
 
 
 /* ===== ARIYAN LOTTERY: COMPLETE LUXURY REDESIGN ===== */
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Bengali:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap');
+
 :root{font-family:'Manrope','Noto Sans Bengali','Noto Sans Thai',sans-serif;color:#eaf4ef;background:#071a16;--navy:#071a16;--navy2:#0d2a22;--gold:#e5c47c;--muted:#9fb6aa;--line:#24483c;--paper:#102a22}
 body{background:#071a16;color:#eaf4ef}
 button,input,textarea,select{font-family:inherit}
